@@ -123,7 +123,8 @@ from .standard_error_bands_strategy import StandardErrorBandsStrategy
 # StochasticOscillatorStrategy moved to price_reversal module
 # from .stochastic_oscillator_strategy import StochasticOscillatorStrategy
 from .supertrend_strategy import SupertrendStrategy
-from .tema_strategy import TEMAStrategy
+# tema_strategy.py was a duplicate of triple_exponential_moving_average_strategy.py, removed
+# from .tema_strategy import TEMAStrategy
 # tema_strategy_alt.py does not exist
 # from .tema_strategy_alt import TEMAStrategy as TEMAStrategyAlt
 from .tma_strategy import TMAStrategy
@@ -267,7 +268,8 @@ __all__ = [
     # StochasticOscillatorStrategy moved to price_reversal module
     # 'StochasticOscillatorStrategy',
     'SupertrendStrategy',
-    'TEMAStrategy',
+    # TEMAStrategy was a duplicate of TripleExponentialMovingAverageStrategy, removed
+    # 'TEMAStrategy',
     # tema_strategy_alt.py does not exist
     # 'TEMAStrategyAlt',
     'TMAStrategy',

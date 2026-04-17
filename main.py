@@ -385,7 +385,8 @@ def get_all_strategies():
         RelativeMomentumIndexStrategy(transaction_cost=TRANSACTION_COST),
         RelativeVigorIndexStrategy(transaction_cost=TRANSACTION_COST),
         StandardErrorBandsStrategy(transaction_cost=TRANSACTION_COST),
-        TEMAStrategy(transaction_cost=TRANSACTION_COST),
+        # TEMAStrategy removed: duplicate of TripleExponentialMovingAverageStrategy (both named "TEMA Strategy")
+        # TEMAStrategy(transaction_cost=TRANSACTION_COST),
         TrixStrategyAlt(transaction_cost=TRANSACTION_COST),
         VolatilityBreakoutStrategy(transaction_cost=TRANSACTION_COST),
         WaveletTransformStrategy(transaction_cost=TRANSACTION_COST),
