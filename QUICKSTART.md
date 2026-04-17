@@ -42,13 +42,13 @@ streamlit run app.py
 
 1. **选择策略**: 双均线交叉
 2. **配置参数**:
-   - 交易对: BTCUSDT
+   - 🔍 **搜索交易对**: 输入 "BTC" 或直接选择 BTCUSDT (支持 400+ USDT 交易对)
    - 时间周期: 1h  
    - 回测天数: 90
    - 初始资金: 10000
    - 短期均线: 10
    - 长期均线: 30
-3. **点击"开始回测"**
+3. **点击“开始回测”**
 4. **查看结果**:
    - 总收益率
    - 最大回撤
@@ -73,6 +73,8 @@ streamlit run app.py
 - ✅ 实时可视化图表
 - ✅ 交互式参数调整
 - ✅ 完整的绩效仪表板
+- ✅ 支持 400+ USDT 交易对
+- ✅ 智能搜索功能
 
 **适合:** 策略研究、回测分析、实时监控
 
@@ -119,6 +121,12 @@ python trade_live.py
 - 如果过去90天使用这个策略,能赚多少钱?
 - 最大会亏损多少?
 - 胜率如何?
+
+### 支持哪些交易对?
+系统支持币安所有 **USDT** 计价的可交易对，共 **400+** 个币种：
+- 主流币: BTCUSDT, ETHUSDT, BNBUSDT, SOLUSDT, XRPUSDT 等
+- 山寨币: ADAUSDT, DOGEUSDT, MATICUSDT, AVAXUSDT 等
+- 新上线: 自动同步币安最新交易对
 
 ### 什么是实时交易?
 程序自动监控市场,根据策略信号执行买卖操作。
@@ -206,9 +214,17 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 - 策略参数不适合当前市场
 - 数据量太少
 - 尝试调整策略参数
+- 尝试其他交易对 (400+ USDT 币种可选)
 
 ### ❓ 如何停止程序?
 按 `Ctrl + C`
+
+### ❓ 如何查找特定交易对?
+在侧边栏的搜索框中输入关键词：
+- 输入 "BTC" → 显示 BTCUSDT, WBTCUSDT
+- 输入 "ETH" → 显示 ETHUSDT, WETHUSDT
+- 输入 "SOL" → 显示 SOLUSDT
+- 清空搜索框 → 显示全部 400+ 交易对
 
 ---
 
@@ -228,10 +244,11 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 - 💡 设计自己的交易思路
 - 💻 编写自定义策略
 - 🧪 回测验证
+- 🔍 尝试不同交易对 (BTC, ETH, SOL 等)
 
 ### Week 2-4: 测试优化
 - 🔄 多周期测试
-- 📈 多交易对测试
+- 📈 多交易对测试 (400+ USDT 币种)
 - ⚙️ 参数优化
 
 ### Month 2+: 实盘准备

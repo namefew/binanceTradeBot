@@ -10,6 +10,7 @@
 - **绩效分析**: 计算收益率、最大回撤、夏普比率等关键指标
 - **可视化界面**: Web界面展示资金曲线、交易历史和绩效仪表板
 - **风险管理**: 支持仓位控制和止损止盈设置
+- **全币种支持**: 支持币安所有 USDT 交易对 (400+ 币种)
 
 ## 📋 系统要求
 
@@ -56,7 +57,9 @@ streamlit run app.py
 **功能:**
 - 📊 回测结果: 选择策略、配置参数、查看绩效指标
 - 📈 图表分析: 资金曲线、回撤分析、交易信号图
+- 🚀 批量回测: 同时测试多个策略或参数
 - 💹 实时行情: 查看当前价格和账户余额
+- 🔍 智能搜索: 快速查找任意 USDT 交易对 (400+ 币种)
 
 ### 4. 命令行回测
 
@@ -90,6 +93,13 @@ python trade_live.py
 - **原理**: 价格触及下轨买入,触及上轨卖出
 - **参数**: 周期、标准差倍数
 - **适用**: 震荡行情
+
+### 4. 更多策略
+系统内置了 **150+** 技术指标策略，包括：
+- **价格动量**: ADX, PSAR, Ichimoku, Supertrend, Hull MA, Vortex 等
+- **价格反转**: Williams %R, Stochastic, CCI, Fisher Transform, ZigZag 等
+- **成交量**: Volume, OBV, MFI, Force Index, Money Flow 等
+- **市场指标**: Arms Index, McClellan Oscillator, Triple Screen 等
 
 ## 🔧 自定义策略
 
@@ -127,14 +137,18 @@ class MyCustomStrategy(Strategy):
 ```
 binanceTradeBot/
 ├── api/                    # API客户端
-│   └── binance_client.py   # 币安API封装
+│   └── binance_client.py   # 币安API封装 (支持400+交易对)
 ├── strategies/             # 交易策略
-│   ├── base_strategy.py    # 策略基类
+│   ├── base_strategy.py    # 策略基类 (状态机持仓逻辑)
 │   ├── ma_crossover.py     # 双均线策略
 │   ├── rsi_strategy.py     # RSI策略
-│   └── bollinger_bands.py  # 布林带策略
+│   ├── bollinger_bands.py  # 布林带策略
+│   ├── price_momentum/     # 价格动量策略 (50+)
+│   ├── price_reversal/     # 价格反转策略 (30+)
+│   ├── volume/             # 成交量策略 (20+)
+│   └── market/             # 市场指标策略 (10+)
 ├── backtest/               # 回测引擎
-│   └── engine.py           # 回测核心逻辑
+│   └── engine.py           # 回测核心逻辑 (归一化资金曲线)
 ├── trading/                # 实时交易
 │   └── engine.py           # 交易引擎
 ├── utils/                  # 工具函数
@@ -206,6 +220,32 @@ MAX_DRAWDOWN_LIMIT=0.15
 ## 🤝 贡献
 
 欢迎提交Issue和Pull Request!
+
+## 📝 更新日志
+
+### v1.1.0 (2026-04-17)
+**新功能:**
+- ✅ 支持币安所有 USDT 交易对 (400+ 币种)
+- ✅ 智能搜索功能：快速查找交易对
+- ✅ 状态机持仓逻辑：避免连续买卖导致的资金计算错误
+- ✅ 归一化资金曲线：修复资金跳涨问题
+- ✅ 双重归一化修复：确保资金曲线从初始值平滑开始
+
+**改进:**
+- 🎨 Web界面优化：添加交易对搜索框和数量显示
+- 🔧 回测引擎优化：修复 positions 计算逻辑
+- 📊 缓存机制：交易对列表每小时自动更新
+
+**Bug修复:**
+- 🐛 修复资金曲线从 1万跳到 1万4 的问题
+- 🐛 修复连续信号导致的持仓计算错误
+- 🐛 修复 NaN 填充导致的收益计算异常
+
+### v1.0.0 (初始版本)
+- 🚀 基础回测功能
+- 📈 3个内置策略
+- 💹 实时交易支持
+- 📊 Streamlit Web界面
 
 ## 📄 许可证
 
