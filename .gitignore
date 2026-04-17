@@ -23,7 +23,7 @@ logs/
 
 # IDE
 .DS_Store
-.idea/*
+.idea/
 .vscode/
 *.swp
 *.swo
