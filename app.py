@@ -8,6 +8,8 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import sys
 import os
+import json
+import time
 
 # 添加项目根目录到路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -163,7 +165,7 @@ def main():
     st.sidebar.caption("使用默认参数，如需自定义请修改策略代码")
     
     # 主界面
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 回测结果", "📈 图表分析", "🚀 批量回测", "💹 实时行情"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 回测结果", "📈 图表分析", "🚀 批量回测", "🔍 策略追踪", "💹 实时行情"])
     
     with tab1:
         st.header("回测结果")
@@ -302,17 +304,26 @@ def main():
             st.info("请先在「回测结果」标签页运行回测")
     
     with tab3:
-        st.header("🚀 批量回测")
-        st.markdown("按类别批量测试所有策略，快速对比绩效")
+        st.header("🚀 批量回测 - 所有策略")
+        st.markdown("""
+        **功能说明**：
+        - ✅ 一次加载数据，测试所有策略（避免重复请求 API）
+        - ✅ 自动对比所有策略的绩效表现
+        - ✅ 快速找出最适合当前市场的策略
+        """)
         
         # 批量回测配置
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             batch_days = st.slider("回测天数", 30, 365, 90, key="batch_days")
         with col2:
             batch_capital = st.number_input("初始资金", min_value=100.0, value=10000.0, step=100.0, key="batch_capital")
+        with col3:
+            batch_position_size = st.slider("仓位比例", 0.01, 1.0, 0.1, 0.01, key="batch_position")
         
-        if st.button("开始批量回测", type="primary", key="batch_backtest"):
+        st.info(f"📊 将测试 {len(all_strategies)} 个策略 on {symbol} ({timeframe})")
+        
+        if st.button("🚀 开始批量回测（所有策略）", type="primary", key="batch_backtest_all"):
             with st.spinner(f"正在加载数据（{batch_days}天）..."):
                 try:
                     client = BinanceClient(testnet=True)
@@ -322,40 +333,19 @@ def main():
                         st.error("未能获取数据")
                         return
                     
-                    st.success(f"✓ 成功加载 {len(data)} 条K线数据")
+                    st.success(f"✅ 成功加载 {len(data)} 条K线数据")
                     
                     # 获取所有策略
                     all_strategies = get_all_strategies()
-                    
-                    # 根据当前选择的分类过滤策略
-                    if selected_category == "其他":
-                        categorized_names = []
-                        for names in category_mapping.values():
-                            categorized_names.extend(names)
-                        filtered_indices = [
-                            i for i, name in enumerate(strategy_names)
-                            if not any(cat_name in name for cat_name in categorized_names)
-                        ]
-                    else:
-                        keywords = category_mapping[selected_category]
-                        filtered_indices = [
-                            i for i, name in enumerate(strategy_names)
-                            if any(keyword in name for keyword in keywords)
-                        ]
-                    
-                    if not filtered_indices:
-                        st.warning("该分类下没有策略")
-                        return
                     
                     # 批量回测
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     
                     results = []
-                    total = len(filtered_indices)
+                    total = len(all_strategies)
                     
-                    for idx, strategy_idx in enumerate(filtered_indices):
-                        strategy = all_strategies[strategy_idx]
+                    for idx, strategy in enumerate(all_strategies):
                         status_text.text(f"正在测试: {strategy.name} ({idx+1}/{total})")
                         
                         try:
@@ -363,7 +353,7 @@ def main():
                                 strategy=strategy,
                                 initial_capital=batch_capital,
                                 commission_rate=commission_rate,
-                                position_size=position_size
+                                position_size=batch_position_size
                             )
                             result = engine.run(data)
                             
@@ -496,6 +486,229 @@ def main():
             st.plotly_chart(scatter_fig, use_container_width=True)
     
     with tab4:
+        st.header("🔍 策略追踪")
+        st.markdown("""
+        **功能说明**：
+        - 🎯 选择特定策略和交易对进行模拟运行
+        - 📊 持续记录策略表现，追踪几天或更长时间
+        - 💾 自动保存历史结果，方便对比分析
+        """)
+        
+        # 策略追踪配置
+        col1, col2 = st.columns(2)
+        with col1:
+            track_strategy_name = st.selectbox("选择要追踪的策略", strategy_names, index=selected_strategy_idx)
+        with col2:
+            track_symbol = st.selectbox("选择交易对", available_symbols, 
+                                       index=available_symbols.index(symbol) if symbol in available_symbols else 0)
+        
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            track_timeframe = st.selectbox("时间周期", ["1m", "5m", "15m", "1h", "4h", "1d"], index=3)
+        with col4:
+            track_days = st.slider("回测天数", 7, 180, 30)
+        with col5:
+            track_capital = st.number_input("初始资金", min_value=100.0, value=10000.0, step=100.0)
+        
+        # 追踪选项
+        st.subheader("⚙️ 追踪设置")
+        auto_refresh = st.checkbox("🔄 自动刷新（每5分钟）", value=False)
+        save_history = st.checkbox("💾 保存历史记录", value=True)
+        
+        if st.button("▶️ 开始追踪", type="primary"):
+            try:
+                # 找到选中的策略
+                track_strategy = None
+                for s in all_strategies:
+                    if s.name == track_strategy_name:
+                        track_strategy = s
+                        break
+                
+                if not track_strategy:
+                    st.error("未找到策略")
+                    return
+                
+                with st.spinner(f"正在加载 {track_symbol} 数据..."):
+                    client = BinanceClient(testnet=True)
+                    data = load_data(client, track_symbol, track_timeframe, track_days)
+                    
+                    if data.empty:
+                        st.error("未能获取数据")
+                        return
+                    
+                    st.success(f"✅ 成功加载 {len(data)} 条K线数据")
+                
+                # 运行回测
+                with st.spinner("正在运行策略..."):
+                    engine = BacktestEngine(
+                        strategy=track_strategy,
+                        initial_capital=track_capital,
+                        commission_rate=commission_rate,
+                        position_size=position_size
+                    )
+                    result = engine.run(data)
+                
+                # 显示结果
+                st.subheader(f"📊 {track_strategy_name} on {track_symbol}")
+                
+                col1, col2, col3, col4 = st.columns(4)
+                metrics = result.summary()
+                col1.metric("总收益率", metrics['总收益率'])
+                col2.metric("最大回撤", metrics['最大回撤'])
+                col3.metric("夏普比率", metrics['夏普比率'])
+                col4.metric("交易次数", metrics['总交易次数'])
+                
+                # 保存追踪结果
+                if save_history:
+                    from datetime import datetime
+                    
+                    tracking_record = {
+                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        'strategy': track_strategy_name,
+                        'symbol': track_symbol,
+                        'timeframe': track_timeframe,
+                        'days': track_days,
+                        'initial_capital': track_capital,
+                        'final_capital': result.final_capital,
+                        'total_return': (result.final_capital / track_capital - 1) * 100,
+                        'max_drawdown': result.max_drawdown * 100,
+                        'sharpe_ratio': result.sharpe_ratio,
+                        'total_trades': result.total_trades,
+                        'win_rate': result.win_rate * 100 if hasattr(result, 'win_rate') else 0
+                    }
+                    
+                    # 保存到文件
+                    history_file = 'tracking_history.json'
+                    history = []
+                    
+                    if os.path.exists(history_file):
+                        try:
+                            with open(history_file, 'r', encoding='utf-8') as f:
+                                history = json.load(f)
+                        except:
+                            history = []
+                    
+                    history.append(tracking_record)
+                    
+                    with open(history_file, 'w', encoding='utf-8') as f:
+                        json.dump(history, f, ensure_ascii=False, indent=2)
+                    
+                    st.success(f"✅ 已保存追踪记录到 {history_file}")
+                
+                # 显示资金曲线
+                st.subheader("💹 资金曲线")
+                equity_fig = ChartGenerator.plot_equity_curve(
+                    result.equity_curve,
+                    result.timestamps,
+                    f"{track_strategy_name} - {track_symbol}"
+                )
+                st.plotly_chart(equity_fig, use_container_width=True)
+                
+                # 如果有历史记录，显示对比
+                if save_history and os.path.exists('tracking_history.json'):
+                    with open('tracking_history.json', 'r', encoding='utf-8') as f:
+                        all_history = json.load(f)
+                    
+                    # 过滤当前策略和交易对的记录
+                    filtered_history = [
+                        r for r in all_history 
+                        if r['strategy'] == track_strategy_name and r['symbol'] == track_symbol
+                    ]
+                    
+                    if len(filtered_history) > 1:
+                        st.subheader("📈 历史追踪对比")
+                        history_df = pd.DataFrame(filtered_history)
+                        history_df['timestamp'] = pd.to_datetime(history_df['timestamp'])
+                        history_df = history_df.sort_values('timestamp', ascending=False)
+                        
+                        st.dataframe(history_df[[
+                            'timestamp', 'total_return', 'max_drawdown', 
+                            'sharpe_ratio', 'total_trades', 'win_rate'
+                        ]].round(2), use_container_width=True)
+                        
+                        # 绘制历史收益趋势
+                        fig = go.Figure()
+                        fig.add_trace(go.Scatter(
+                            x=history_df['timestamp'],
+                            y=history_df['total_return'],
+                            mode='lines+markers',
+                            name='收益率',
+                            line=dict(color='#2ecc71', width=2),
+                            marker=dict(size=8)
+                        ))
+                        
+                        fig.update_layout(
+                            title=f"{track_strategy_name} on {track_symbol} - 收益趋势",
+                            xaxis_title="时间",
+                            yaxis_title="收益率 (%)",
+                            template='plotly_white',
+                            height=400
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                # 自动刷新
+                if auto_refresh:
+                    st.info("🔄 页面将在 5 分钟后自动刷新...")
+                    time.sleep(300)  # 5分钟
+                    st.rerun()
+                
+            except Exception as e:
+                st.error(f"追踪失败: {str(e)}")
+                import traceback
+                st.code(traceback.format_exc())
+        
+        # 显示所有追踪历史
+        if os.path.exists('tracking_history.json'):
+            st.subheader("📋 所有追踪历史")
+            try:
+                with open('tracking_history.json', 'r', encoding='utf-8') as f:
+                    all_history = json.load(f)
+                
+                if all_history:
+                    history_df = pd.DataFrame(all_history)
+                    history_df['timestamp'] = pd.to_datetime(history_df['timestamp'])
+                    history_df = history_df.sort_values('timestamp', ascending=False)
+                    
+                    # 显示过滤器
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        filter_strategy = st.multiselect(
+                            "筛选策略",
+                            options=history_df['strategy'].unique(),
+                            default=[]
+                        )
+                    with col2:
+                        filter_symbol = st.multiselect(
+                            "筛选交易对",
+                            options=history_df['symbol'].unique(),
+                            default=[]
+                        )
+                    
+                    # 应用过滤
+                    filtered_df = history_df.copy()
+                    if filter_strategy:
+                        filtered_df = filtered_df[filtered_df['strategy'].isin(filter_strategy)]
+                    if filter_symbol:
+                        filtered_df = filtered_df[filtered_df['symbol'].isin(filter_symbol)]
+                    
+                    st.dataframe(filtered_df[[
+                        'timestamp', 'strategy', 'symbol', 'timeframe',
+                        'total_return', 'max_drawdown', 'sharpe_ratio', 
+                        'total_trades', 'win_rate'
+                    ]].round(2), use_container_width=True)
+                    
+                    # 清空历史按钮
+                    if st.button("🗑️ 清空所有历史记录"):
+                        os.remove('tracking_history.json')
+                        st.success("历史记录已清空")
+                        st.rerun()
+                else:
+                    st.info("暂无追踪历史")
+            except Exception as e:
+                st.error(f"读取历史记录失败: {e}")
+    
+    with tab5:
         st.header("实时行情")
         
         col1, col2 = st.columns([3, 1])

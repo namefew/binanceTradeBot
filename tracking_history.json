@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2026-04-17 22:01:55",
+    "strategy": "Moving Average Strategy",
+    "symbol": "BTCUSDT",
+    "timeframe": "1h",
+    "days": 7,
+    "initial_capital": 10000,
+    "final_capital": 9840.161747396718,
+    "total_return": -1.5983825260328155,
+    "max_drawdown": 1.6088560439188406,
+    "sharpe_ratio": -3.2461032837325154,
+    "total_trades": 17,
+    "win_rate": 25.0
+  }
+]
